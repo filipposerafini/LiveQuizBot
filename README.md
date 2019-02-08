@@ -6,6 +6,8 @@
 
 I still have to work on the accuracy that as of today is pretty low :sweat_smile:
 
+For now is working only on smartphone with a resolution of 2246px x 1080px, but I'm willing to make it device independant.
+
 :construction:
 
 ### Disclaimer
@@ -30,6 +32,6 @@ To install the other requirements: `pip install -r requirements.txt`.
 
 Distributed under the [MIT](LICENSE) license.
 
-Copyright &copy; 2018, [Filippo Serafini](https://filipposerafini.github.io/).
+Copyright &copy; 2019, [Filippo Serafini](https://filipposerafini.github.io/).
 
 [python]: https://img.shields.io/badge/python-3-blue.svg?longCache=true&style=flat-square
