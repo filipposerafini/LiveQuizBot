@@ -1,0 +1,4 @@
+opencv-python
+pytesseract
+requests
+beautifulsoup4

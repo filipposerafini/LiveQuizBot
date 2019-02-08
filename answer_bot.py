@@ -2,88 +2,95 @@ import cv2
 import pytesseract
 import os
 import requests
-import urllib
 from bs4 import BeautifulSoup
-import argparse
+import multiprocessing
 
-directory = "/home/filippo/Downloads/"
-domain = "https://www.google.it/search?q="
-headers_get = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:49.0) Gecko/20100101 Firefox/49.0',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1' }
-row_height = 50
-left = 34
-left_answer = 106
-right = 1046
-right_answer = 970
-question_top = 546
-question_bottom = 902
-answer_height = 166
-first_answer_top = 890
-second_answer_top = 1082
-third_answer_top = 1274
-answer_bottom = 1540
+# PATH
+SCREENSHOT = "screenshot.png"
+DOMAIN = "https://www.google.it/search?q="
 
-while True:
-    for filename in os.listdir(directory):
-        if (filename.startswith("screenshot") and filename.endswith(".png")):
-            print("New screenshot found: " + filename)
-            img = cv2.imread(directory + filename, cv2.IMREAD_GRAYSCALE)
-            # os.remove(directory + filename)
+# COLORS
+class colors:
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    END = '\033[0m'
 
-            ret, question = cv2.threshold(img[question_top:question_bottom, left:right], 200, 255, cv2.THRESH_BINARY_INV)
-            ret, answers = cv2.threshold(img, 200, 255, cv2.THRESH_BINARY)
+# SCREEN CONSTANTS
+LEFT_QUESTION = 34
+RIGHT_QUESTION = 1046
+QUESTION_TOP = 546
+QUESTION_BOTTOM = 902
+LEFT_OPTION = 106
+RIGHT_OPTION = 970
+OPTION_HEIGHT = 166
+ROW_HEIGHT = 50
+OPTION_POSITION = [890, 1082, 1274]
 
-            question_text = pytesseract.image_to_string(question, lang='ita').replace('?', ' ')
-            row_count = question_text.count('\n')
-            question_text = question_text.replace('\n', ' ')
-            print(question_text)
+def get_number_of_results(data):
+    image = data[0]
+    position = data[1]
+    row_count = data[2]
+    question_text = data[3]
+    # Crop image
+    top = position + row_count * ROW_HEIGHT
+    bottom = top + OPTION_HEIGHT
+    option = image[top:bottom, LEFT_OPTION:RIGHT_OPTION]
+    # Read option text
+    option_text = pytesseract.image_to_string(option, lang='ita').replace('\n', ' ')
+    # Create query
+    query = DOMAIN + (question_text + ' ' + option_text).replace(' ', '+')
+    # Perform request and read results
+    r = requests.get(query)
+    soup = BeautifulSoup(r.text, 'lxml')
+    results = soup.find('div',{'id':'resultStats'}).text.split()[1].replace('.', '')
+    return option_text, int(results)
 
-            top = first_answer_top + row_count * row_height
-            bottom = top + answer_height
-            first_answer = answers[top:bottom, left_answer:right_answer]
-            first_answer_text = pytesseract.image_to_string(first_answer, lang='ita').replace('\n', ' ')
-            print(first_answer_text)
+def print_results(result_list):
+    total = sum(n for _, n in result_list)
+    maximum = max(result_list,key=lambda x:x[1])
+    for result in result_list:
+        if result == maximum:
+            print(colors.BOLD, end='')
+        print(result[0], end=' ')
+        if result == maximum:
+            print(colors.GREEN, end='')
+        print("%.2f%%\n" % ((result[1] / total) * 100))
+        if result == maximum:
+            print(colors.END, end='')
+    print("-----------------------------------------------------------------------")
 
-            top = second_answer_top + row_count * row_height
-            bottom = top + answer_height
-            second_answer = answers[top:bottom, left_answer:right_answer]
-            second_answer_text = pytesseract.image_to_string(second_answer, lang='ita').replace('\n', ' ')
-            print(second_answer_text)
+def manage_question():
+    # Import image and remove screenshot from directory
+    image = cv2.imread(SCREENSHOT, cv2.IMREAD_GRAYSCALE)
+    os.remove(SCREENSHOT)
+    # Threshold images for OCR
+    ret, question = cv2.threshold(image[QUESTION_TOP:QUESTION_BOTTOM,
+        LEFT_QUESTION:RIGHT_QUESTION], 200, 255, cv2.THRESH_BINARY_INV)
+    ret, options = cv2.threshold(image, 200, 255, cv2.THRESH_BINARY)
+    # Read question text (determining number of rows)
+    question_text = pytesseract.image_to_string(question, lang='ita')
+    row_count = question_text.count('\n')
+    question_text = question_text.replace('\n', ' ')
+    print(colors.BOLD + question_text + colors.END + "\n")
+    # Get number of results of each option in parallel
+    pool = multiprocessing.Pool(processes=3)
+    data = []
+    for i in range(0, 3):
+        data.append((options, OPTION_POSITION[i], row_count, question_text))
+    result_list = pool.map(get_number_of_results, data)
+    # Print results
+    print_results(result_list)
 
-            top = third_answer_top + row_count * row_height
-            bottom = top + answer_height
-            third_answer = answers[top:bottom, left_answer:right_answer]
-            third_answer_text = pytesseract.image_to_string(third_answer, lang='ita').replace('\n', ' ')
-            print(third_answer_text)
-
-            first_query = (question_text + first_answer_text).replace(' ', '+')
-            second_query = (question_text + second_answer_text).replace(' ', '+')
-            third_query = (question_text + third_answer_text).replace(' ', '+')
-
-            r = requests.get(domain + first_query, headers=headers_get)
-            soup = BeautifulSoup(r.text, 'lxml')
-            first_count = soup.find('div',{'id':'resultStats'}).text.split()[1]
-            r = requests.get(domain + second_query, headers=headers_get)
-            soup = BeautifulSoup(r.text, 'lxml')
-            second_count = soup.find('div',{'id':'resultStats'}).text.split()[1]
-            r = requests.get(domain + third_query, headers=headers_get)
-            soup = BeautifulSoup(r.text, 'lxml')
-            third_count = soup.find('div',{'id':'resultStats'}).text.split()[1]
-
-            print(first_count, second_count, third_count)
-
-            cv2.imshow("qwer", first_answer)
-            cv2.imshow("asdf", second_answer)
-            cv2.imshow("qdfr", third_answer)
-            cv2.waitKey(0)
-
-            cv2.destroyAllWindows()
-
-        else:
-            continue
+if __name__ == "__main__":
+    while True:
+        key = input("\nPress " + colors.BOLD + colors.GREEN + "ENTER" + colors.END + " to take " +
+                "a screenshot or " + colors.BOLD + colors.RED + "q" + colors.END + " to quit: ")
+        if not key:
+            print()
+            os.system("adb exec-out screencap -p > " + SCREENSHOT)
+            manage_question()
+        elif key == 'q':
+            break
