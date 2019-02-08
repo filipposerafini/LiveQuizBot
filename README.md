@@ -8,15 +8,15 @@ I still have to work on the accuracy that as of today is pretty low :sweat_smile
 
 :construction:
 
+### Disclaimer
+
+I don't encourage anyone to use this bot, that was made exclusively for educational purposes.
+
 ## Requirements
 
 The script requires `adb`, available within the [Android SDK Platform Tools](https://developer.android.com/studio/releases/platform-tools).
 
 To install the other requirements: `pip install -r requirements.txt`.
-
-#### Disclaimer
-
-I don't encourage anyone to use this bot, that was made exclusively for educational purposes.
 
 ## Usage
 
