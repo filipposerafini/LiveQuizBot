@@ -6,7 +6,7 @@
 
 I still have to work on the accuracy that as of today is pretty low :sweat_smile:
 
-For now is working only on smartphone with a resolution of 2246px x 1080px, but I'm willing to make it device independant.
+For now is working only on smartphone with a resolution of 2246x1080, but I'm willing to make it device independant.
 
 :construction:
 
