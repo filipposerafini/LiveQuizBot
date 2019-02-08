@@ -48,21 +48,28 @@ def get_number_of_results(data):
     results = soup.find('div',{'id':'resultStats'}).text.split()[1].replace('.', '')
     return option_text, int(results)
 
-def print_results(result_list):
+def print_results(result_list, negative):
     total = sum(n for _, n in result_list)
-    maximum = max(result_list,key=lambda x:x[1])
+    if negative:
+        guess = min(result_list, key=lambda x:x[1])
+    else:
+        guess = max(result_list, key=lambda x:x[1])
     for result in result_list:
-        if result == maximum:
+        if result == guess:
             print(colors.BOLD, end='')
         print(result[0], end=' ')
-        if result == maximum:
-            print(colors.GREEN, end='')
+        if result == guess:
+            if negative:
+                print(colors.YELLOW, end='')
+            else:
+                print(colors.GREEN, end='')
         print("%.2f%%\n" % ((result[1] / total) * 100))
-        if result == maximum:
+        if result == guess:
             print(colors.END, end='')
     print("-----------------------------------------------------------------------")
 
 def manage_question():
+    os.system("adb exec-out screencap -p > " + SCREENSHOT)
     # Import image and remove screenshot from directory
     image = cv2.imread(SCREENSHOT, cv2.IMREAD_GRAYSCALE)
     os.remove(SCREENSHOT)
@@ -72,6 +79,7 @@ def manage_question():
     ret, options = cv2.threshold(image, 200, 255, cv2.THRESH_BINARY)
     # Read question text (determining number of rows)
     question_text = pytesseract.image_to_string(question, lang='ita')
+    negative = "NON" in question_text
     row_count = question_text.count('\n')
     question_text = question_text.replace('\n', ' ')
     print(colors.BOLD + question_text + colors.END + "\n")
@@ -82,7 +90,7 @@ def manage_question():
         data.append((options, OPTION_POSITION[i], row_count, question_text))
     result_list = pool.map(get_number_of_results, data)
     # Print results
-    print_results(result_list)
+    print_results(result_list, negative)
 
 if __name__ == "__main__":
     while True:
@@ -90,7 +98,6 @@ if __name__ == "__main__":
                 "a screenshot or " + colors.BOLD + colors.RED + "q" + colors.END + " to quit: ")
         if not key:
             print()
-            os.system("adb exec-out screencap -p > " + SCREENSHOT)
             manage_question()
         elif key == 'q':
             break
