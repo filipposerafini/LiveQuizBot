@@ -82,7 +82,7 @@ def manage_question():
     negative = "NON" in question_text
     row_count = question_text.count('\n')
     question_text = question_text.replace('\n', ' ')
-    print(colors.BOLD + question_text + colors.END + "\n")
+    print("\n" + colors.BOLD + question_text + colors.END + "\n")
     # Get number of results of each option in parallel
     pool = multiprocessing.Pool(processes=3)
     data = []
