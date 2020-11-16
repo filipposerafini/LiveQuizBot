@@ -10,13 +10,7 @@ SCREENSHOT = "screenshot.png"
 DOMAIN = "https://www.google.it/search?q="
 
 # COLORS
-class colors:
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-    END = '\033[0m'
+colors = {'GREEN': '\033[92m', 'YELLOW': '\033[93m', 'RED': '\033[91m', 'BOLD': '\033[1m', 'UNDERLINE': '\033[4m', 'END': '\033[0m'}
 
 # SCREEN CONSTANTS
 LEFT_QUESTION = 34
@@ -56,16 +50,16 @@ def print_results(result_list, negative):
         guess = max(result_list, key=lambda x:x[1])
     for result in result_list:
         if result == guess:
-            print(colors.BOLD, end='')
+            print(colors['BOLD'], end='')
         print(result[0], end=' ')
         if result == guess:
             if negative:
-                print(colors.YELLOW, end='')
+                print(colors['YELLOW'], end='')
             else:
-                print(colors.GREEN, end='')
+                print(colors['GREEN'], end='')
         print("%.2f%%\n" % ((result[1] / total) * 100))
         if result == guess:
-            print(colors.END, end='')
+            print(colors['END'], end='')
     print("-----------------------------------------------------------------------")
 
 def manage_question():
@@ -79,13 +73,13 @@ def manage_question():
     # Read question text (determining number of rows)
     question_text = pytesseract.image_to_string(question, lang='ita')
     if not question_text:
-        print(colors.RED + colors.BOLD + "Something went wrong reading the screenshot!"
-                + colors.YELLOW + " Please try again." + colors.END)
+        print(colors['RED'] + colors['BOLD'] + "Something went wrong reading the screenshot!"
+                + colors['YELLOW'] + " Please try again." + colors['END'])
     else:
         negative = "NON" in question_text
         row_count = question_text.count('\n')
         question_text = question_text.replace('\n', ' ')
-        print(colors.BOLD + question_text + colors.END + "\n")
+        print(colors['BOLD'] + question_text + colors['END'] + "\n")
         # Get number of results of each option in parallel
         pool = multiprocessing.Pool(processes=3)
         data = []
@@ -96,19 +90,19 @@ def manage_question():
             # Print results
             print_results(result_list, negative)
         except:
-            print(colors.RED + colors.BOLD + "The query produced no result."
-                    + colors.YELLOW + " Please try again." + colors.END)
+            print(colors['RED'] + colors['BOLD'] + "The query produced no result."
+                    + colors['YELLOW'] + " Please try again." + colors['END'])
 
 if __name__ == "__main__":
     while True:
-        key = input("\nPress " + colors.BOLD + colors.GREEN + "ENTER" + colors.END + " to take a screenshot" +
-                " of the question or press " + colors.BOLD + colors.RED + "q" + colors.END + " to quit: ")
+        key = input("\nPress " + colors['BOLD'] + colors['GREEN'] + "ENTER" + colors['END'] + " to take a screenshot" +
+                " of the question or press " + colors['BOLD'] + colors['RED'] + "q" + colors['END'] + " to quit: ")
         if not key:
             print()
             ret = os.system("adb exec-out screencap -p > " + SCREENSHOT)
             if ret == 0:
                 manage_question()
             else:
-                print(colors.BOLD + colors.YELLOW + "Please check your USB connection" + colors.END)
+                print(colors['BOLD'] + colors['YELLOW'] + "Please check your USB connection" + colors['END'])
         elif key == 'q':
             break
